@@ -1,0 +1,105 @@
+CREATE DATABASE IF NOT EXISTS kiosk_replacer CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+USE kiosk_replacer;
+
+CREATE TABLE IF NOT EXISTS users (
+  id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  name VARCHAR(120) NOT NULL,
+  email VARCHAR(190) NOT NULL UNIQUE,
+  password_hash VARCHAR(255) NOT NULL,
+  role ENUM('admin','sub_admin','chef') NOT NULL DEFAULT 'sub_admin',
+  outlet_id BIGINT UNSIGNED NULL,
+  is_active BOOLEAN NOT NULL DEFAULT TRUE,
+  created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS outlets (
+  id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  name VARCHAR(150) NOT NULL,
+  code VARCHAR(50) NOT NULL UNIQUE,
+  address VARCHAR(255) DEFAULT '',
+  phone VARCHAR(30) DEFAULT '',
+  is_active BOOLEAN NOT NULL DEFAULT TRUE,
+  created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS menu_categories (
+  id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  outlet_id BIGINT UNSIGNED NOT NULL,
+  name VARCHAR(100) NOT NULL,
+  created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  UNIQUE KEY uq_category_outlet (outlet_id, name),
+  CONSTRAINT fk_category_outlet FOREIGN KEY (outlet_id) REFERENCES outlets(id)
+);
+
+CREATE TABLE IF NOT EXISTS menu_items (
+  id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  outlet_id BIGINT UNSIGNED NOT NULL,
+  category_id BIGINT UNSIGNED NULL,
+  name VARCHAR(150) NOT NULL,
+  description VARCHAR(500) DEFAULT '',
+  price DECIMAL(10,2) NOT NULL,
+  image_url VARCHAR(500) DEFAULT '',
+  is_available BOOLEAN NOT NULL DEFAULT TRUE,
+  created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  INDEX idx_menu_outlet (outlet_id, is_available),
+  CONSTRAINT fk_menu_outlet FOREIGN KEY (outlet_id) REFERENCES outlets(id),
+  CONSTRAINT fk_menu_category FOREIGN KEY (category_id) REFERENCES menu_categories(id) ON DELETE SET NULL
+);
+
+CREATE TABLE IF NOT EXISTS customers (
+  id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  name VARCHAR(120) NOT NULL,
+  phone VARCHAR(30) NOT NULL,
+  created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  UNIQUE KEY uq_customer_phone (phone)
+);
+
+CREATE TABLE IF NOT EXISTS orders (
+  id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  order_number VARCHAR(32) NOT NULL UNIQUE,
+  outlet_id BIGINT UNSIGNED NOT NULL,
+  customer_id BIGINT UNSIGNED NOT NULL,
+  status ENUM('pending','accepted','preparing','ready','completed','cancelled') NOT NULL DEFAULT 'pending',
+  payment_method ENUM('demo','upi','card','cash') NOT NULL DEFAULT 'demo',
+  payment_status ENUM('demo_unpaid','pending','paid','failed','refunded') NOT NULL DEFAULT 'demo_unpaid',
+  subtotal DECIMAL(10,2) NOT NULL,
+  service_fee DECIMAL(10,2) NOT NULL DEFAULT 0,
+  total DECIMAL(10,2) NOT NULL,
+  notes VARCHAR(500) DEFAULT '',
+  created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  INDEX idx_orders_created (created_at),
+  INDEX idx_orders_outlet_status (outlet_id, status),
+  CONSTRAINT fk_order_outlet FOREIGN KEY (outlet_id) REFERENCES outlets(id),
+  CONSTRAINT fk_order_customer FOREIGN KEY (customer_id) REFERENCES customers(id)
+);
+
+CREATE TABLE IF NOT EXISTS order_items (
+  id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  order_id BIGINT UNSIGNED NOT NULL,
+  menu_item_id BIGINT UNSIGNED NULL,
+  item_name VARCHAR(150) NOT NULL,
+  unit_price DECIMAL(10,2) NOT NULL,
+  quantity INT UNSIGNED NOT NULL,
+  line_total DECIMAL(10,2) NOT NULL,
+  CONSTRAINT fk_item_order FOREIGN KEY (order_id) REFERENCES orders(id) ON DELETE CASCADE,
+  CONSTRAINT fk_item_menu FOREIGN KEY (menu_item_id) REFERENCES menu_items(id) ON DELETE SET NULL
+);
+
+CREATE TABLE IF NOT EXISTS order_status_history (
+  id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  order_id BIGINT UNSIGNED NOT NULL,
+  changed_by BIGINT UNSIGNED NULL,
+  old_status VARCHAR(30) NULL,
+  new_status VARCHAR(30) NOT NULL,
+  note VARCHAR(255) DEFAULT '',
+  created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  CONSTRAINT fk_history_order FOREIGN KEY (order_id) REFERENCES orders(id) ON DELETE CASCADE,
+  CONSTRAINT fk_history_user FOREIGN KEY (changed_by) REFERENCES users(id) ON DELETE SET NULL
+);
+
+ALTER TABLE users
+  ADD CONSTRAINT fk_user_outlet FOREIGN KEY (outlet_id) REFERENCES outlets(id) ON DELETE SET NULL;

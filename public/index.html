@@ -1,0 +1,50 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Kiosk Replacer</title><link rel="stylesheet" href="/styles.css">
+</head>
+<body>
+<header class="topbar">
+  <div class="brand-mark">KR</div><div class="brand-copy"><h1>Kiosk Replacer</h1><p>Quick ordering · Simple service</p></div>
+  <nav><button class="nav-btn active" data-page="customer">Order Menu</button><button class="nav-btn" data-page="login">Admin Login</button><button class="nav-btn hidden" id="dashboardNav" data-page="dashboard">Dashboard</button><button class="nav-btn hidden" id="kitchenNav" data-page="kitchen">Kitchen</button></nav>
+</header>
+<main>
+  <section id="customerPage" class="page">
+    <div class="hero"><div><span class="eyebrow">WELCOME TO KIOSK REPLACER</span><h2>Your favourites,<br><em>just a scan away.</em></h2><p>Choose an outlet, browse the menu, and place your order.</p></div><div class="hero-stamp"><span>SCAN</span><b>▦</b><small>SELECT · ORDER</small></div></div>
+    <div class="menu-head"><div><span class="eyebrow">MADE FRESH FOR YOU</span><h2>Today's Menu</h2></div><label class="outlet-label">Outlet <select id="outletSelect"></select></label></div>
+    <div id="menuGrid" class="product-grid"><p>Loading menu…</p></div>
+    <aside class="cart-panel"><h3>Your Order <span id="cartCount" class="count">0</span></h3><div id="cartItems">Your cart is empty.</div><div class="cart-total"><span>Total including ₹5 service fee</span><strong id="cartTotal">₹0.00</strong></div>
+      <form id="checkoutForm" class="checkout-form"><h3>Customer details</h3><label>Full name<input name="name" required minlength="2" maxlength="120" placeholder="Enter customer name"></label><label>Phone number<input name="phone" required pattern="[+0-9() -]{7,30}" maxlength="30" placeholder="e.g. 9876543210"></label><label>Order note (optional)<input name="notes" maxlength="500" placeholder="Any special instructions"></label><button class="btn btn-primary full" type="submit">Place Demo Order</button><small>Demo checkout only. No real payment is collected.</small></form>
+    </aside>
+    <div id="orderSuccess" class="success-box hidden"></div>
+  </section>
+
+  <section id="loginPage" class="page hidden">
+    <div class="login-card"><span class="eyebrow">STAFF ACCESS</span><h2>Admin Login</h2><p class="muted">Sign in to manage orders, outlets, menu and staff.</p>
+      <form id="loginForm"><label>Email<input name="email" type="email" required autocomplete="username" placeholder="admin@example.com"></label><label>Password<input name="password" type="password" required autocomplete="current-password" placeholder="Enter password"></label><button class="btn btn-primary full">Sign in</button></form><div id="loginError" class="error-text"></div>
+      <p class="login-hint">Local seed account is listed in README. Change its password before deployment.</p>
+    </div>
+  </section>
+
+  <section id="dashboardPage" class="page hidden">
+    <div class="page-heading"><div><span class="eyebrow">ORDER MANAGEMENT</span><h2>Admin Dashboard</h2><p id="welcomeText" class="muted"></p></div><button id="logoutBtn" class="btn btn-outline">Sign out</button></div>
+    <div class="filters panel"><label>Period<select id="periodFilter"><option value="day">Today</option><option value="week">Last 7 days</option><option value="month" selected>Last 30 days</option><option value="year">Last year</option><option value="custom">Custom range</option></select></label><label class="custom-date hidden">From<input id="fromDate" type="date"></label><label class="custom-date hidden">To<input id="toDate" type="date"></label><label id="outletFilterWrap">Outlet<select id="reportOutlet"><option value="">All outlets</option></select></label><button id="applyFilters" class="btn btn-primary">Apply filters</button></div>
+    <div class="stats-grid"><article class="stat-card"><span>Total orders</span><strong id="statOrders">0</strong></article><article class="stat-card"><span>Sales total</span><strong id="statSales">₹0</strong></article><article class="stat-card"><span>Active orders</span><strong id="statActive">0</strong></article><article class="stat-card"><span>Ready / completed</span><strong id="statCompleted">0</strong></article></div>
+    <div class="panel"><div class="panel-heading"><div><h3>Orders</h3><p>Latest matching records, stored in MySQL</p></div><label>Status<select id="statusFilter"><option value="">All statuses</option><option>pending</option><option>accepted</option><option>preparing</option><option>ready</option><option>completed</option><option>cancelled</option></select></label></div><div class="table-wrap"><table><thead><tr><th>Order</th><th>Customer</th><th>Outlet</th><th>Items</th><th>Total</th><th>Status</th><th>Created</th></tr></thead><tbody id="ordersTable"><tr><td colspan="7">Loading…</td></tr></tbody></table></div></div>
+    <div class="management-grid">
+      <section class="panel" id="menuManagement"><div class="panel-heading"><div><h3>Menu management</h3><p>Create and deactivate menu items</p></div></div><form id="menuForm" class="inline-form"><label>Outlet<select name="outlet_id" class="outlet-options" required></select></label><label>Item name<input name="name" required></label><label>Category<input name="category" placeholder="Snacks"></label><label>Price (₹)<input name="price" type="number" min="0" step=".01" required></label><label>Description<input name="description"></label><button class="btn btn-primary">Add item</button></form><div id="menuAdminList" class="compact-list"></div></section>
+      <section class="panel admin-only" id="outletManagement"><div class="panel-heading"><div><h3>Outlets</h3><p>Create and deactivate outlets</p></div></div><form id="outletForm" class="inline-form"><label>Outlet name<input name="name" required></label><label>Code<input name="code" required></label><label>Address<input name="address"></label><label>Phone<input name="phone"></label><button class="btn btn-primary">Add outlet</button></form><div id="outletAdminList" class="compact-list"></div></section>
+      <section class="panel admin-only" id="staffManagement"><div class="panel-heading"><div><h3>Sub-admins & chefs</h3><p>Create staff accounts and assign outlet access</p></div></div><form id="staffForm" class="inline-form"><label>Name<input name="name" required></label><label>Email<input name="email" type="email" required></label><label>Temporary password<input name="password" type="password" minlength="10" required></label><label>Role<select name="role"><option value="sub_admin">Sub-admin</option><option value="chef">Kitchen chef</option><option value="admin">Admin</option></select></label><label>Outlet<select name="outlet_id" class="outlet-options"><option value="">All / none</option></select></label><button class="btn btn-primary">Create staff</button></form><div id="staffAdminList" class="compact-list"></div></section>
+    </div>
+  </section>
+
+  <section id="kitchenPage" class="page hidden">
+    <div class="page-heading"><div><span class="eyebrow">KITCHEN OPERATIONS</span><h2>Kitchen Orders</h2><p class="muted">Accept incoming orders and move them through preparation.</p></div><button id="refreshKitchen" class="btn btn-outline">Refresh</button></div>
+    <div id="kitchenGrid" class="kitchen-grid"></div>
+  </section>
+  <div id="toast" class="toast" role="status"></div>
+</main>
+<footer><span>© 2026 Kiosk Replacer</span><span>REST API · MySQL · Role-based access</span></footer>
+<script src="/app.js"></script>
+</body></html>
